@@ -33,7 +33,7 @@ namespace PlexShareScreenshare.Client
         private CancellationTokenSource Source;
         private CancellationToken Token;
 
-        ScreenCapturer() 
+        public ScreenCapturer() 
         {
             _capturedFrame = new Queue<Bitmap>();
             _captureTask = null;
