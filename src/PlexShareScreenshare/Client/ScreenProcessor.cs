@@ -42,7 +42,7 @@ namespace PlexShareScreenshare.Client
 
         // Old and the new resolutions 
         private Tuple<int, int> OldRes;
-        private Tuple<int, int> NewRes { private get; set; }
+        private Tuple<int, int> NewRes { get;  set; }
 
         // Tokens added to be able to stop the thread execution
         CancellationTokenSource tokenSource;

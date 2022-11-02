@@ -19,12 +19,12 @@ namespace PlexShareScreenshare.Client
     /// <summary>
     /// Class contains implementation of the screen capturing using threads (tasks)
     /// </summary>
-    internal class ScreenCapturer
+    public class ScreenCapturer
     {
         private Queue<Bitmap> _capturedFrame;
 
         // Limits the number of frames in the queue
-        const int MaxQueueLength = 50;
+        public const int MaxQueueLength = 50;
 
         // Task to capture the screen asynchronously
         private Task _captureTask;
@@ -55,6 +55,15 @@ namespace PlexShareScreenshare.Client
             {
                 return _capturedFrame.Dequeue();
             }
+        }
+
+        /// <summary>
+        /// Returns the length of the _capturedFrame queue
+        /// </summary>
+        /// <returns>Integer value containing the length of queue.</returns>
+        public int GetCapturedFrameLength()
+        {
+            return _capturedFrame.Count;
         }
 
         /// <summary>
