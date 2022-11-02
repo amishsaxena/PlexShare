@@ -45,14 +45,15 @@ namespace PlexShareScreenshare.Client
         /// <returns>Bitmap image of 720p dimension</returns>
         public Bitmap GetImage() 
         {
-            try
+            while(_capturedFrame.Count == 0)
+            {
+                Thread.Sleep(100);
+            }
+            
+            // TODO : check if lock is freed after returning
+            lock(_capturedFrame)
             {
                 return _capturedFrame.Dequeue();
-            }
-            catch(Exception e)
-            {
-                Trace.WriteLine($"[ScreenSharing] Dequeue failed: {e.Message}");
-                return null;
             }
         }
 
@@ -87,7 +88,7 @@ namespace PlexShareScreenshare.Client
                     else
                     {
                         // Sleep for some time, if queue is filled 
-                        System.Threading.Thread.Sleep(100);
+                        Thread.Sleep(100);
                     }
                 }
             }, Token);
