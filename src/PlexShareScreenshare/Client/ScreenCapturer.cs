@@ -45,6 +45,9 @@ namespace PlexShareScreenshare.Client
             // TODO : check if lock is freed after returning
             lock(_capturedFrame)
             {
+                //Bitmap image = _capturedFrame.Dequeue();
+                //Bitmap imageToReturn = new Bitmap(image, (int)(image.Width / 1.5), (int)(image.Height / 1.5));
+                //return imageToReturn;
                 return _capturedFrame.Dequeue();
             }
         }
@@ -78,7 +81,9 @@ namespace PlexShareScreenshare.Client
                         {
                             try
                             {
-                                _capturedFrame.Enqueue(screenshot.MakeScreenshot());
+                                Bitmap image = screenshot.MakeScreenshot();
+                                if (image != null)
+                                    _capturedFrame.Enqueue(image);
                             }
                             catch (Exception e)
                             {

@@ -21,7 +21,7 @@ namespace PlexShareScreenshare.Client
     /// <summary>
     /// Class contains the necessary functions for taking the screenshot of the current screen.
     /// </summary>
-    internal class Screenshot
+    public class Screenshot
     {
         private static Screenshot? instance;
         public Boolean CaptureActive { get; private set; }
@@ -68,6 +68,8 @@ namespace PlexShareScreenshare.Client
             InitializeVariables(displayIndex, adapterIndex);
             Resource screenResource;
             OutputDuplication.TryAcquireNextFrame(maxTimeout, out _, out screenResource);
+            if (screenResource == null)
+                return null;
             Texture2D screenTexture2D = screenResource.QueryInterface<Texture2D>();
             Device.ImmediateContext.CopyResource(screenTexture2D, Texture2D);
             DataBox dataBox = Device.ImmediateContext.MapSubresource(Texture2D, 0, MapMode.Read, MapFlags.None);
