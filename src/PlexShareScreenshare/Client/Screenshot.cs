@@ -24,28 +24,35 @@ namespace PlexShareScreenshare.Client
         private static readonly object _lock = new();
         private static Screenshot? instance;
         public Boolean CaptureActive { get; private set; }
-        private Factory1? Factory1;
-        private Adapter1? Adapter1;
-        private Device? Device;
-        private Output? Output;
-        private Output1? Output1;
-        private Int32 Width;
-        private Int32 Height;
-        private Rectangle Bounds;
-        private Texture2DDescription Texture2DDescription;
-        private Texture2D? Texture2D;
-        private OutputDuplication? OutputDuplication;
-        private Bitmap? Bitmap;
+        private Factory1? _factory1;
+        private Adapter1? _adapter1;
+        private Device? _device;
+        private Output? _output;
+        private Output1? _output1;
+        private Int32 _width;
+        private Int32 _height;
+        private Rectangle _bounds;
+        private Texture2DDescription _texture2DDescription;
+        private Texture2D? _texture2D;
+        private OutputDuplication? _outputDuplication;
+        private Bitmap? _bitmap;
 
         private Int32 MakeScreenshot_LastDisplayIndexValue;
         private Int32 MakeScreenshot_LastAdapterIndexValue;
 
+        /// <summary>
+        /// Protected constructor inorder so that making new objects of this class from outside is not supported.
+        /// </summary>
         protected Screenshot()
         {
             CaptureActive = false;
             InitializeVariables(0, 0, true);
         }
 
+        /// <summary>
+        /// For implementing singleton class of Screenshot.
+        /// </summary>
+        /// <returns>The singleton instance of Screenshot object.</returns>
         public static Screenshot Instance()
         {
             lock (_lock)
@@ -69,27 +76,32 @@ namespace PlexShareScreenshare.Client
         {
             InitializeVariables(displayIndex, adapterIndex);
             Resource screenResource;
-            OutputDuplication.TryAcquireNextFrame(maxTimeout, out _, out screenResource);
-            if (screenResource == null) return null;
+            _outputDuplication.TryAcquireNextFrame(maxTimeout, out _, out screenResource);
+            if (screenResource == null)
+            {
+                // if the next frame could not be captured due to some reasons
+                return null;
+            }
             Texture2D screenTexture2D = screenResource.QueryInterface<Texture2D>();
-            Device.ImmediateContext.CopyResource(screenTexture2D, Texture2D);
-            DataBox dataBox = Device.ImmediateContext.MapSubresource(Texture2D, 0, MapMode.Read, MapFlags.None);
-            BitmapData bitmapData = Bitmap.LockBits(Bounds, ImageLockMode.WriteOnly, Bitmap.PixelFormat);
+            _device.ImmediateContext.CopyResource(screenTexture2D, _texture2D);
+            DataBox dataBox = _device.ImmediateContext.MapSubresource(_texture2D, 0, MapMode.Read, MapFlags.None);
+            BitmapData bitmapData = _bitmap.LockBits(_bounds, ImageLockMode.WriteOnly, _bitmap.PixelFormat);
             IntPtr dataBoxPointer = dataBox.DataPointer;
             IntPtr bitmapDataPointer = bitmapData.Scan0;
-            for (Int32 y = 0; y < Height; y++)
+            for (Int32 y = 0; y < _height; y++)
             {
-                Utilities.CopyMemory(bitmapDataPointer, dataBoxPointer, Width * 4);
+                Utilities.CopyMemory(bitmapDataPointer, dataBoxPointer, _width * 4);
                 dataBoxPointer = IntPtr.Add(dataBoxPointer, dataBox.RowPitch);
                 bitmapDataPointer = IntPtr.Add(bitmapDataPointer, bitmapData.Stride);
             }
-            Bitmap.UnlockBits(bitmapData);
-            Device.ImmediateContext.UnmapSubresource(Texture2D, 0);
-            OutputDuplication.ReleaseFrame();
+            // free up memory and resources after task is done
+            _bitmap.UnlockBits(bitmapData);
+            _device.ImmediateContext.UnmapSubresource(_texture2D, 0);
+            _outputDuplication.ReleaseFrame();
             screenTexture2D.Dispose();
             screenResource.Dispose();
-            Bitmap SmallBitmap = new Bitmap(Bitmap, 2 * Bitmap.Width / 3, 2 * Bitmap.Height / 3);
-            return SmallBitmap;
+            // update the captured frame to a lower resolution (1080p -> 720p) and then return.
+            return (new Bitmap(_bitmap, 2 * _bitmap.Width / 3, 2 * _bitmap.Height / 3)) ;
         }
 
         /// <summary>
@@ -105,54 +117,52 @@ namespace PlexShareScreenshare.Client
             if (displayIndexChanged || adapterIndexChanged || forcedInitialization)
             {
                 DisposeVariables();
-                Factory1 = new Factory1();
-                Adapter1 = Factory1.GetAdapter1(adapterIndex);
-                Device = new Device(Adapter1);
-                Output = Adapter1.GetOutput(displayIndex);
-                Output1 = Output.QueryInterface<Output1>();
-                Width = Output1.Description.DesktopBounds.Right - Output1.Description.DesktopBounds.Left;
-                Height = Output1.Description.DesktopBounds.Bottom - Output1.Description.DesktopBounds.Top;
-                Bounds = new Rectangle(Point.Empty, new Size(Width, Height));
-                Texture2DDescription = new Texture2DDescription
+                _factory1 = new Factory1();
+                _adapter1 = _factory1.GetAdapter1(adapterIndex);
+                _device = new Device(_adapter1);
+                _output = _adapter1.GetOutput(displayIndex);
+                _output1 = _output.QueryInterface<Output1>();
+                _width = _output1.Description.DesktopBounds.Right - _output1.Description.DesktopBounds.Left;
+                _height = _output1.Description.DesktopBounds.Bottom - _output1.Description.DesktopBounds.Top;
+                _bounds = new Rectangle(Point.Empty, new Size(_width, _height));
+                _texture2DDescription = new Texture2DDescription
                 {
                     CpuAccessFlags = CpuAccessFlags.Read,
                     BindFlags = BindFlags.None,
                     Format = Format.B8G8R8A8_UNorm,
-                    Width = Width,
-                    Height = Height,
+                    Width = _width,
+                    Height = _height,
                     OptionFlags = ResourceOptionFlags.None,
                     MipLevels = 1,
                     ArraySize = 1,
                     SampleDescription = { Count = 1, Quality = 0 },
                     Usage = ResourceUsage.Staging
                 };
-                Texture2D = new Texture2D(Device, Texture2DDescription);
-                OutputDuplication = Output1.DuplicateOutput(Device);
-                OutputDuplication.TryAcquireNextFrame(1000, out _, out _);
-                OutputDuplication.ReleaseFrame();
-                Bitmap = new Bitmap(Width, Height, PixelFormat.Format32bppRgb);
+                _texture2D = new Texture2D(_device, _texture2DDescription);
+                _outputDuplication = _output1.DuplicateOutput(_device);
+                _outputDuplication.TryAcquireNextFrame(1000, out _, out _);
+                _outputDuplication.ReleaseFrame();
+                _bitmap = new Bitmap(_width, _height, PixelFormat.Format32bppRgb);
                 MakeScreenshot_LastAdapterIndexValue = adapterIndex;
                 MakeScreenshot_LastDisplayIndexValue = displayIndex;
             }
         }
 
         /// <summary>
-        /// Disposes the class memebers to avoid memory hogging.
+        /// Disposes the class members to avoid memory hogging.
         /// </summary>
         public void DisposeVariables()
         {
-            Bitmap?.Dispose();
-            OutputDuplication?.Dispose();
-            Texture2D?.Dispose();
-            Output1?.Dispose();
-            Output?.Dispose();
-            Device?.Dispose();
-            Adapter1?.Dispose();
-            Factory1?.Dispose();
+            _bitmap?.Dispose();
+            _outputDuplication?.Dispose();
+            _texture2D?.Dispose();
+            _output1?.Dispose();
+            _output?.Dispose();
+            _device?.Dispose();
+            _adapter1?.Dispose();
+            _factory1?.Dispose();
             MakeScreenshot_LastAdapterIndexValue = -1;
             MakeScreenshot_LastDisplayIndexValue = -1;
         }
     }
-
-
 }

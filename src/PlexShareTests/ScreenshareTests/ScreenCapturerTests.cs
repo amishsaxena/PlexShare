@@ -15,9 +15,7 @@ namespace PlexShareTests.ScreenshareTests
         [Fact]
         public void Test1()
         {
-            Task<ScreenCapturer> task = Task.Run(() => { ScreenCapturer screenCapturer = new ScreenCapturer(); return screenCapturer; });
-            task.Wait();
-            var screenCapturer = task.Result;
+            ScreenCapturer screenCapturer = new ScreenCapturer();
             screenCapturer.StartCapture();
             Thread.Sleep(1000);
             int count = 0;
@@ -38,17 +36,28 @@ namespace PlexShareTests.ScreenshareTests
         [Fact]
         public void Test2()
         {
-            Task<ScreenCapturer> task = Task.Run(() => { ScreenCapturer screenCapturer = new ScreenCapturer(); return screenCapturer;  });
-            task.Wait();
-            var screenCapturer = task.Result;
+            ScreenCapturer screenCapturer = new ScreenCapturer();
             screenCapturer.StartCapture();
-            Console.WriteLine("Hello");
             Thread.Sleep(1000);
             int framesCaptured = screenCapturer.GetCapturedFrameLength();
 
             screenCapturer.StopCapture();
             Thread.Sleep(1);
             Assert.True(framesCaptured is > 0 and <= ScreenCapturer.MaxQueueLength);
+        }
+
+        /// <summary>
+        /// Runs only capturing for a longer time and see if queue reaches its limit
+        /// </summary>
+        [Fact]
+        public void Test3()
+        {
+            ScreenCapturer screenCapturer = new ScreenCapturer();
+            screenCapturer.StartCapture();
+            Thread.Sleep(10000);
+            int framesCaptured = screenCapturer.GetCapturedFrameLength();
+            screenCapturer.StopCapture();
+            Assert.True(condition: framesCaptured == ScreenCapturer.MaxQueueLength);
         }
     }
 }

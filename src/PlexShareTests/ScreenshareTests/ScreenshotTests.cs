@@ -52,8 +52,8 @@ namespace PlexShareTests.ScreenshareTests
             var screenSize = DisplayTools.GetPhysicalDisplaySize();
             var screenWidth = screenSize.Item1;
             var screenHeight = screenSize.Item2;
-            Assert.Equal(720, image.Height);
-            Assert.Equal(1280, image.Width);
+            Assert.Equal(screenHeight / 1.5, image.Height);
+            Assert.Equal(screenWidth / 1.5, image.Width);
         }
     }
 }

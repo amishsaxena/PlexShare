@@ -81,18 +81,20 @@ namespace PlexShareScreenshare.Client
                 {
                     if (_capturedFrame.Count < MaxQueueLength)
                     {
-                        lock (_capturedFrame)
+                        try
                         {
-                            try
+                            Bitmap img = _screenshot.MakeScreenshot();
+                            if (img != null)
                             {
-                                Bitmap img = _screenshot.MakeScreenshot();
-                                if (img != null)
+                                lock (_capturedFrame)
+                                { 
                                     _capturedFrame.Enqueue(img);
+                                }
                             }
-                            catch (Exception e)
-                            {
-                                Trace.WriteLine($"[ScreenSharing] Could not capture screenshot: {e.Message}");
-                            }
+                        }
+                        catch (Exception e)
+                        {
+                            Trace.WriteLine($"[ScreenSharing] Could not capture screenshot: {e.Message}");
                         }
                     }
                     else
